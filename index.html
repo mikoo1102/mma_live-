@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Gale MMA</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(to bottom, #ff7e5f, #feb47b);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #clock {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: rgba(0,0,0,0.6);
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+    .entries {
+      margin-top: 10px;
+      text-align: left;
+    }
+    .entry {
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .time {
+      font-weight: bold;
+      color: #ffd700;
+    }
+    #upcoming {
+      margin-top: 30px;
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+    }
+    ul { list-style: none; padding: 0; }
+    li { padding: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>Live Gale MMA</h1>
+  <div id="clock"></div>
+
+  <div class="card">
+    <h2>Fame MMA</h2>
+    <p>Następna gala: <span id="fame-next">Ładowanie...</span></p>
+    <div class="entries" id="fame-feed">Ładowanie...</div>
+  </div>
+
+  <div class="card">
+    <h2>Prime MMA</h2>
+    <p>Następna gala: <span id="prime-next">Ładowanie...</span></p>
+    <div class="entries" id="prime-feed">Ładowanie...</div>
+  </div>
+
+  <div class="card">
+    <h2>KSW</h2>
+    <p>Następna gala: <span id="ksw-next">Ładowanie...</span></p>
+    <div class="entries" id="ksw-feed">Ładowanie...</div>
+  </div>
+
+  <div id="upcoming">
+    <h2>Nadchodzące gale</h2>
+    <ul id="upcoming-list">Ładowanie...</ul>
+  </div>
+
+  <script>
+    // Zegar
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleDateString('pl-PL') + ' ' + now.toLocaleTimeString('pl-PL');
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // Pobieranie feedów na żywo
+    async function loadFeed(url, elementId) {
+      try {
+        const res = await fetch(url + '?_=' + Date.now());
+        const data = await res.json();
+        const container = document.getElementById(elementId);
+        container.innerHTML = data.map(item => 
+          `<div class="entry"><span class="time">${item.time}</span> – ${item.text}</div>`
+        ).join('');
+      } catch (e) {
+        document.getElementById(elementId).textContent = "Brak danych.";
+      }
+    }
+
+    // Pobieranie nadchodzących gal
+    async function loadEvents() {
+      try {
+        const res = await fetch('events.json?_=' + Date.now());
+        const data = await res.json();
+        const upcoming = document.getElementById('upcoming-list');
+        upcoming.innerHTML = data.map(e => `<li>${e.date} – <b>${e.name}</b></li>`).join('');
+
+        // Ustawianie następnej gali w kartach
+        document.getElementById('fame-next').textContent = data.find(x => x.type === 'fame')?.date || "Brak danych";
+        document.getElementById('prime-next').textContent = data.find(x => x.type === 'prime')?.date || "Brak danych";
+        document.getElementById('ksw-next').textContent = data.find(x => x.type === 'ksw')?.date || "Brak danych";
+      } catch (e) {
+        document.getElementById('upcoming-list').textContent = "Brak danych.";
+      }
+    }
+
+    function refreshAll() {
+      loadFeed('fame-live.json', 'fame-feed');
+      loadFeed('prime-live.json', 'prime-feed');
+      loadFeed('ksw-live.json', 'ksw-feed');
+      loadEvents();
+    }
+    refreshAll();
+    setInterval(refreshAll, 30000);
+  </script>
+</body>
+</html>
